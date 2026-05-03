@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>§49 — Біздің Галактика</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --white: #f5f5f0;
+    --off-white: #e8e8e0;
+    --light-grey: #aaaaaa;
+    --mid-grey: #555555;
+    --dark-grey: #1a1a1a;
+    --black: #000000;
+    --accent: #ffffff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: #000;
+    color: var(--white);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* WATERMARK */
+  .watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(28px, 5vw, 64px);
+    font-weight: 700;
+    color: rgba(255,255,255,0.04);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9999;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  /* METEOR CANVAS */
+  #meteorCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    background-size: 200px;
+    opacity: 0.4;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* SCANLINES */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.015) 2px,
+      rgba(255,255,255,0.015) 4px
+    );
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* MAIN WRAPPER */
+  .site-wrapper {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* HEADER */
+  header {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8vw 10vw;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header-author {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(10px, 1.2vw, 13px);
+    letter-spacing: 0.4em;
+    color: var(--light-grey);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    animation: fadeInUp 1s ease both;
+  }
+
+  .header-paragraph {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(60px, 14vw, 180px);
+    font-weight: 700;
+    line-height: 0.85;
+    color: var(--white);
+    letter-spacing: -0.05em;
+    animation: fadeInUp 1s ease 0.2s both;
+    position: relative;
+  }
+
+  .header-paragraph span {
+    display: block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.25);
+  }
+
+  .header-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(18px, 3vw, 42px);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--off-white);
+    margin-top: 2.5rem;
+    max-width: 700px;
+    line-height: 1.4;
+    animation: fadeInUp 1s ease 0.4s both;
+  }
+
+  .header-line {
+    position: absolute;
+    right: 10vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeInRight 1s ease 0.6s both;
+  }
+
+  .header-line-item {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--mid-grey);
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 3rem;
+    left: 10vw;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInUp 1s ease 0.8s both;
+  }
+
+  .scroll-indicator span {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--mid-grey);
+    text-transform: uppercase;
+  }
+
+  .scroll-line {
+    width: 60px;
+    height: 1px;
+    background: var(--mid-grey);
+    animation: expandLine 2s ease 1.2s both;
+  }
+
+  @keyframes expandLine { from { width: 0; } to { width: 60px; } }
+
+  /* SECTIONS */
+  section {
+    padding: 8vw 10vw;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  .section-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--mid-grey);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .section-number::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    max-width: 80px;
+  }
+
+  .section-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 5vw, 72px);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--white);
+    margin-bottom: 3rem;
+    letter-spacing: -0.02em;
+  }
+
+  .section-heading .outline {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.3);
+  }
+
+  /* GRID LAYOUTS */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    align-items: start;
+  }
+
+  .content-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 3vw;
+  }
+
+  .content-grid-asymm {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 4vw;
+    align-items: start;
+  }
+
+  /* TEXT */
+  p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(16px, 1.8vw, 22px);
+    line-height: 1.8;
+    color: var(--off-white);
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+  }
+
+  p strong {
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  /* DATA CARDS */
+  .data-card {
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s ease, transform 0.4s ease;
+  }
+
+  .data-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .data-card:hover {
+    border-color: rgba(255,255,255,0.35);
+    transform: translateY(-4px);
+  }
+
+  .data-card-number {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(36px, 5vw, 72px);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.03em;
+  }
+
+  .data-card-unit {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--light-grey);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .data-card-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--mid-grey);
+    line-height: 1.6;
+  }
+
+  /* FULL-WIDTH FEATURE */
+  .feature-block {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 4rem;
+    margin: 4vw 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-block::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--mid-grey);
+    text-transform: uppercase;
+  }
+
+  /* QUOTE BLOCK */
+  .quote-block {
+    padding: 4rem 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin: 4vw 0;
+  }
+
+  .quote-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 3.5vw, 48px);
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--white);
+    max-width: 900px;
+  }
+
+  .quote-source {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--mid-grey);
+    margin-top: 2rem;
+    text-transform: uppercase;
+  }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(12px, 1.4vw, 15px);
+    margin-top: 2rem;
+  }
+
+  .data-table thead tr {
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 1rem 1.5rem;
+    color: var(--light-grey);
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .data-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: var(--off-white);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(14px, 1.5vw, 18px);
+  }
+
+  .data-table tr:hover td {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .mono { font-family: 'Space Mono', monospace !important; font-size: 0.85em !important; }
+
+  /* DIVIDER */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin: 3rem 0;
+  }
+
+  .divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+  .divider-symbol {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--mid-grey);
+    letter-spacing: 0.3em;
+  }
+
+  /* FULL-WIDTH TEXT BANNER */
+  .text-banner {
+    padding: 6vw 10vw;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .text-banner-inner {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 68px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+
+  .text-banner-inner .dim {
+    color: var(--mid-grey);
+  }
+
+  /* CLASSIFICATION BADGE */
+  .badge {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 0.3rem 0.9rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--light-grey);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 6vw 10vw;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    align-items: end;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .footer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 900;
+    color: var(--white);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .footer-meta {
+    text-align: right;
+  }
+
+  .footer-meta p {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--mid-grey);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* HORIZONTAL RULE */
+  hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 3rem 0; }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+    border-left: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .timeline-item {
+    position: relative;
+    padding: 0 0 3rem 2rem;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -0.45rem;
+    top: 0.4rem;
+    width: 7px;
+    height: 7px;
+    background: var(--white);
+    border-radius: 50%;
+  }
+
+  .timeline-year {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--mid-grey);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .timeline-content {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(16px, 1.8vw, 20px);
+    color: var(--off-white);
+    line-height: 1.6;
+  }
+
+  /* COSMOS VIZ */
+  #cosmosViz {
+    width: 100%;
+    height: 320px;
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
+    margin: 2rem 0;
+    background: #000;
+  }
+
+  @media (max-width: 900px) {
+    .content-grid, .content-grid-asymm, .content-grid-3, footer {
+      grid-template-columns: 1fr;
+    }
+    .header-line { display: none; }
+    .footer-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- WATERMARK -->
+<div class="watermark">Азамат Ақсұлтан</div>
+
+<!-- METEOR CANVAS -->
+<canvas id="meteorCanvas"></canvas>
+
+<div class="site-wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-author">Жасаған: Азамат Ақсұлтан</div>
+    <div class="header-paragraph">
+      §49
+      <span>ҒАЛАМ</span>
+    </div>
+    <div class="header-title">Біздің Галактика. Басқа галактикалардың ашылуы. Квазарлар.</div>
+
+    <div class="header-line">
+      <div class="header-line-item">Астрофизика</div>
+      <div class="header-line-item">2024</div>
+      <div class="header-line-item">Параграф 49</div>
+    </div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-line"></div>
+      <span>Жалғастыру</span>
+    </div>
+  </header>
+
+  <!-- BANNER 1 -->
+  <div class="text-banner">
+    <div class="text-banner-inner">
+      Ғаламат кеңістік —<br>
+      <span class="dim">шексіз, терең, жұмбақ.</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: ГАЛАКТИКА -->
+  <section>
+    <div class="section-number">01 — Біздің Галактика</div>
+    <div class="section-heading reveal">
+      Құс жолы:<br>
+      <span class="outline">Үй галактикамыз</span>
+    </div>
+
+    <div class="content-grid">
+      <div>
+        <div class="badge">Негізгі ақпарат</div>
+        <p>Біздің Галактика — <strong>Құс жолы</strong> деп аталатын спираль тәрізді ғарыш жүйесі. Ол миллиардтаған жұлдыздардан, планеталардан, газдан, шаңнан және қараңғы заттан тұрады. Галактикамыздың диаметрі шамамен <strong>100 000 жарық жылы</strong>, ал қалыңдығы орталығында 16 000 жарық жылына жетеді.</p>
+        <p>Күн жүйесі галактиканың орталығынан шамамен <strong>26 000 жарық жылы</strong> қашықтықта, Орион спираль иінінде орналасқан. Галактика орталығында өлшемі орасан зор <strong>қара тесік</strong> бар — оның массасы Күннің массасынан 4 миллион есе асып кетеді.</p>
+        <p>Галактикамыздағы жұлдыздардың жалпы саны <strong>200–400 миллиард</strong> деп бағаланады. Олардың арасындағы кеңістікті газ бен шаң бұлттары толтырады.</p>
+      </div>
+      <div>
+        <div class="data-card reveal">
+          <div class="data-card-number">100 000</div>
+          <div class="data-card-unit">жарық жылы — диаметр</div>
+          <div class="data-card-desc">Құс жолы галактикасының толық диаметрі. Жарықтың бір шетінен екіншісіне өтуі 100 мың жылға созылар еді.</div>
+        </div>
+        <br>
+        <div class="data-card reveal">
+          <div class="data-card-number">26 000</div>
+          <div class="data-card-unit">жарық жылы — Күннің орналасуы</div>
+          <div class="data-card-desc">Галактика орталығынан Күн жүйесіне дейінгі қашықтық. Орталықта алып қара тесік бар.</div>
+        </div>
+        <br>
+        <div class="data-card reveal">
+          <div class="data-card-number">4 млн</div>
+          <div class="data-card-unit">Күн массасы — қара тесік</div>
+          <div class="data-card-desc">Галактика орталығындағы Sagittarius A* қара тесігінің массасы осыншалық орасан зор.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-block" data-label="ДЕРЕКТЕР">
+      <div class="content-grid-3">
+        <div>
+          <div class="data-card-unit" style="margin-bottom:0.5rem;">Галактика түрі</div>
+          <p style="font-size:18px; margin:0;">Жолақты спираль (SBbc типі)</p>
+        </div>
+        <div>
+          <div class="data-card-unit" style="margin-bottom:0.5rem;">Жасы</div>
+          <p style="font-size:18px; margin:0;">13,6 миллиард жыл</p>
+        </div>
+        <div>
+          <div class="data-card-unit" style="margin-bottom:0.5rem;">Айналу жылдамдығы</div>
+          <p style="font-size:18px; margin:0;">220 км/с (Күн орбитасы)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-block reveal">
+      <div class="quote-text">"Біздің Галактика — ғарыштың шексіз мұхитындағы бір кішкентай арал ғана."</div>
+      <div class="quote-source">— Харлоу Шепли, астроном</div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: АШЫЛУ ТАРИХЫ -->
+  <section>
+    <div class="section-number">02 — Тарих</div>
+    <div class="section-heading reveal">
+      Галактикалардың<br>
+      <span class="outline">Ашылу жолы</span>
+    </div>
+
+    <div class="content-grid-asymm">
+      <div>
+        <p>XVII–XIX ғасырларда телескоптың дамуымен астрономдар аспанда бұрынғыдан да терең зерттеулер жүргізе бастады. Алғашқы кезде тұманды дақтар деп аталған нысандар шынында не екені белгісіз болды.</p>
+
+        <div class="timeline reveal">
+          <div class="timeline-item">
+            <div class="timeline-year">1610 — Галилей</div>
+            <div class="timeline-content">Телескоп арқылы Құс жолының жеке жұлдыздардан тұратынын анықтады. Алғаш рет галактикамыздың жұлдыздық табиғаты дәлелденді.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">1755 — Кант</div>
+            <div class="timeline-content">Имманиул Кант "аралдық ғалам" теориясын ұсынды: тұманды дақтар — біздің галактикамызға ұқсас алыстағы жүйелер.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">1845 — Росс</div>
+            <div class="timeline-content">Лорд Росс М51 тұманды дағының спираль тәрізді құрылымын алғаш рет суреттеді. Спираль галактикалардың ашылуы.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">1923 — Хаббл</div>
+            <div class="timeline-content">Эдвин Хаббл Андромеда тұмандылығындағы цефеид жұлдыздарды өлшеп, оның Құс жолынан тыс алыс галактика екенін дәлелдеді. Революциялық жаңалық.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-year">1929 — Хаббл</div>
+            <div class="timeline-content">Галактикалар бізден алыстаған сайын жылдамырақ ұзайтынын ашты — Хаббл заңы. Ғаламның кеңейіп жатқанының дәлелі.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card reveal" style="margin-bottom:2rem;">
+          <div class="data-card-number">2+ трлн</div>
+          <div class="data-card-unit">Бақыланатын ғаламдағы галактикалар</div>
+          <div class="data-card-desc">Заманауи телескоптар арқылы анықталған галактикалардың болжамды саны — 2 триллионнан астам.</div>
+        </div>
+
+        <div class="data-card reveal" style="margin-bottom:2rem;">
+          <div class="data-card-number">2,5 млн</div>
+          <div class="data-card-unit">жарық жылы — Андромедаға дейін</div>
+          <div class="data-card-desc">Ең жақын ірі галактика — Андромеда (M31). Оған дейінгі қашықтық 2,5 миллион жарық жылы.</div>
+        </div>
+
+        <div class="data-card reveal">
+          <div class="data-card-number">70 км/с</div>
+          <div class="data-card-unit">Хаббл тұрақтысы (шамамен)</div>
+          <div class="data-card-desc">Әрбір мегапарсекке шаққанда галактикалардың ұзаю жылдамдығы. Ғаламның кеңеюін сипаттайды.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GALAXIES TABLE -->
+    <div class="divider"><div class="divider-line"></div><div class="divider-symbol">КЕСТЕ</div><div class="divider-line"></div></div>
+
+    <table class="data-table reveal">
+      <thead>
+        <tr>
+          <th>Галактика</th>
+          <th>Түрі</th>
+          <th>Қашықтық</th>
+          <th>Диаметр</th>
+          <th>Жұлдыздар саны</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Құс жолы</strong></td>
+          <td class="mono">SBbc</td>
+          <td class="mono">—</td>
+          <td class="mono">~100 000 жж</td>
+          <td class="mono">200–400 млрд</td>
+        </tr>
+        <tr>
+          <td><strong>Андромеда (M31)</strong></td>
+          <td class="mono">SA(s)b</td>
+          <td class="mono">2,537 млн жж</td>
+          <td class="mono">~220 000 жж</td>
+          <td class="mono">~1 трлн</td>
+        </tr>
+        <tr>
+          <td><strong>Үлкен Магеллан бұлты</strong></td>
+          <td class="mono">Дұрыссыз</td>
+          <td class="mono">~160 000 жж</td>
+          <td class="mono">~14 000 жж</td>
+          <td class="mono">~30 млрд</td>
+        </tr>
+        <tr>
+          <td><strong>Кіші Магеллан бұлты</strong></td>
+          <td class="mono">Дұрыссыз</td>
+          <td class="mono">~197 000 жж</td>
+          <td class="mono">~7 000 жж</td>
+          <td class="mono">~3 млрд</td>
+        </tr>
+        <tr>
+          <td><strong>Үшбұрышты (M33)</strong></td>
+          <td class="mono">SA(s)cd</td>
+          <td class="mono">~3 млн жж</td>
+          <td class="mono">~60 000 жж</td>
+          <td class="mono">~40 млрд</td>
+        </tr>
+        <tr>
+          <td><strong>Сомбреро (M104)</strong></td>
+          <td class="mono">SA(s)a</td>
+          <td class="mono">~31 млн жж</td>
+          <td class="mono">~50 000 жж</td>
+          <td class="mono">~100 млрд</td>
+        </tr>
+        <tr>
+          <td><strong>Дөңгелек (M87)</strong></td>
+          <td class="mono">E0p</td>
+          <td class="mono">~53 млн жж</td>
+          <td class="mono">~120 000 жж</td>
+          <td class="mono">~1 трлн</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 3: ГАЛАКТИКА ТҮРЛЕРІ -->
+  <section>
+    <div class="section-number">03 — Жіктелуі</div>
+    <div class="section-heading reveal">
+      Галактика<br>
+      <span class="outline">Түрлері</span>
+    </div>
+
+    <p>Эдвин Хаббл 1926 жылы галактикаларды пішіндеріне қарай жіктеді. Бұл жүйе <strong>Хаббл реттілігі</strong> немесе "камертон диаграммасы" деп аталады.</p>
+
+    <div class="content-grid-3">
+      <div class="data-card reveal">
+        <div class="data-card-number" style="font-size:2.5rem;">Э</div>
+        <div class="data-card-unit">Эллиптикалық</div>
+        <div class="data-card-desc">Дөңгелек немесе сопақ пішінді. Е0–Е7 деп белгіленеді. Газ бен шаң аз, жаңа жұлдыздар сирек пайда болады. Ескі, қызыл жұлдыздардан тұрады. M87 — үлгі.</div>
+      </div>
+      <div class="data-card reveal">
+        <div class="data-card-number" style="font-size:2.5rem;">S</div>
+        <div class="data-card-unit">Спираль</div>
+        <div class="data-card-desc">Спираль иіндері бар. Sa, Sb, Sc деп бөлінеді. Иіндерде жаңа жұлдыздар белсенді түзіледі. Орталығы дискіден тұрады. Андромеда мен Құс жолы — осы топта.</div>
+      </div>
+      <div class="data-card reveal">
+        <div class="data-card-number" style="font-size:2.5rem;">Дұрыс</div>
+        <div class="data-card-unit">Дұрыссыз</div>
+        <div class="data-card-desc">Нақты пішіні жоқ. Гравитациялық өзара әрекет нәтижесінде деформацияланған. Үлкен Магеллан бұлты — жақын дұрыссыз галактика.</div>
+      </div>
+    </div>
+
+    <div class="feature-block" data-label="ХАББЛ РЕТТІЛІГІ" style="margin-top:3rem;">
+      <p style="margin-bottom:1.5rem;"><strong>Жолақты спираль (SB)</strong> — орталығынан жолақ өтетін спираль галактикалар. Біздің Галактика осы типке жатады. SBa, SBb, SBc деп жіктеледі.</p>
+      <p style="margin-bottom:1.5rem;"><strong>Линзалы галактикалар (S0)</strong> — спираль мен эллиптикалық арасындағы аралық тип. Диск бар, бірақ спираль иіндер жоқ.</p>
+      <p style="margin:0;"><strong>Карлик галактикалар</strong> — өте кішкентай, жұлдыздары аз галактикалар. Үлкен галактикалардың айналасында спутник ретінде орналасады.</p>
+    </div>
+  </section>
+
+  <!-- BANNER 2 -->
+  <div class="text-banner">
+    <div class="text-banner-inner">
+      Квазарлар —<br>
+      <span class="dim">ғаламның ең жарық нысандары.</span>
+    </div>
+  </div>
+
+  <!-- SECTION 4: КВАЗАРЛАР -->
+  <section>
+    <div class="section-number">04 — Квазарлар</div>
+    <div class="section-heading reveal">
+      Квазарлар:<br>
+      <span class="outline">Ғаламның Маяктары</span>
+    </div>
+
+    <div class="content-grid-asymm">
+      <div>
+        <div class="badge">Quasar — Quasi-stellar object</div>
+        <p><strong>Квазар</strong> (ағылш. quasar — квазижұлдыздық нысан) — ғаламатты қуатты электромагниттік сәуле шығаратын белсенді галактика ядросы. Квазарлар ғаламдағы ең жарық тұрақты нысандар болып табылады.</p>
+        <p>Квазарлардың жарықтығы бүкіл галактикамыздан <strong>100 есе</strong> жоғары болуы мүмкін — бұл жарықтық өте кішкентай аймақтан шығады, шамамен Күн жүйесіндей ғана кеңістіктен.</p>
+        <p>Квазарлардың жарқырауы галактика орталығындағы <strong>алып қара тесіктен</strong> туындайды. Заттар қара тесікке түсер алдында аккреция дискісін түзеді. Осы процесте орасан зор энергия бөлінеді.</p>
+        <p>Квазарлар ғаламның алыс — яғни <strong>ерте дәуірінде</strong> белсенді болған. Ең алыс квазарлар шамамен 13 миллиард жарық жылы қашықтықта орналасқан. Демек, оларды байқай отырып, біз ғаламның жас кезіне үңіліп отырмыз.</p>
+
+        <div class="quote-block reveal" style="margin-top:2rem;">
+          <div class="quote-text" style="font-size: clamp(18px,2.5vw,32px);">"Квазар бір секундта Күннің бүкіл өмірлік энергиясын бөледі."</div>
+          <div class="quote-source">— Астрофизика тұжырымдамасы</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="data-card reveal" style="margin-bottom:2rem;">
+          <div class="data-card-number">3C 273</div>
+          <div class="data-card-unit">Алғаш ашылған квазар (1963)</div>
+          <div class="data-card-desc">Алғашқы квазар 1963 жылы Маартен Шмидт ашты. Оның спектрі сонша қызыл ығысқан болды — ол тіпті жаңа нысан типі екенін білдірді.</div>
+        </div>
+        <div class="data-card reveal" style="margin-bottom:2rem;">
+          <div class="data-card-number">13 млрд</div>
+          <div class="data-card-unit">жарық жылы — ең алыс квазар</div>
+          <div class="data-card-desc">Ең алыс квазарлар ғаламның туғанынан 700 миллион жыл өткен кезеңде белсенді болған.</div>
+        </div>
+        <div class="data-card reveal" style="margin-bottom:2rem;">
+          <div class="data-card-number">10¹⁴</div>
+          <div class="data-card-unit">Күн жарықтығы — квазар қуаты</div>
+          <div class="data-card-desc">Ең жарық квазарлардың жарықтығы 100 триллион Күнге тең. Адам ақылы сыймас қуат.</div>
+        </div>
+        <div class="data-card reveal">
+          <div class="data-card-number">500 000+</div>
+          <div class="data-card-unit">Ашылған квазарлар саны</div>
+          <div class="data-card-desc">Слоан сандық аспан зерттеуі (SDSS) жарты миллионнан астам квазар каталогын жасады.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"><div class="divider-line"></div><div class="divider-symbol">КВАЗАР ДЕРЕКТЕРІ</div><div class="divider-line"></div></div>
+
+    <table class="data-table reveal">
+      <thead>
+        <tr>
+          <th>Қасиет</th>
+          <th>Мән</th>
+          <th>Салыстырма</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Жарықтық</strong></td>
+          <td class="mono">10¹² – 10¹⁴ L☉</td>
+          <td>Галактикамыздан 100 есе жарық</td>
+        </tr>
+        <tr>
+          <td><strong>Орталық объект</strong></td>
+          <td class="mono">10⁶ – 10¹⁰ M☉</td>
+          <td>Алып қара тесік</td>
+        </tr>
+        <tr>
+          <td><strong>Сәуле ауқымы</strong></td>
+          <td class="mono">Рентген → Радио</td>
+          <td>Толық электромагнит спектрі</td>
+        </tr>
+        <tr>
+          <td><strong>Қызыл ығысу (z)</strong></td>
+          <td class="mono">0,06 – 7,64</td>
+          <td>Алыстық пен жасты білдіреді</td>
+        </tr>
+        <tr>
+          <td><strong>Белсенді кезең</strong></td>
+          <td class="mono">Ерте ғалам дәуірі</td>
+          <td>13 млрд жыл бұрын шыңы</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 5: ГАЛАКТИКА КЛАСТЕРЛЕРІ -->
+  <section>
+    <div class="section-number">05 — Кластерлер мен құрылым</div>
+    <div class="section-heading reveal">
+      Ғаламның<br>
+      <span class="outline">Ірі Құрылымы</span>
+    </div>
+
+    <div class="content-grid">
+      <div>
+        <p>Галактикалар оқшауланған болмайды — олар <strong>гравитациялық күш</strong> арқылы топтасады. Бірнеше ондаған галактикадан тұратын топтасулар <strong>галактика тобы</strong> деп, ал жүздеген мен мыңдаған галактикадан тұратыны <strong>галактика кластері</strong> деп аталады.</p>
+        <p>Біздің Галактика <strong>Жергілікті Топқа</strong> кіреді — бұл топта шамамен 54 галактика бар. Ең ірілері: Андромеда, Үшбұрышты және Құс жолы.</p>
+        <p>Галактика кластерлері одан да үлкен <strong>суперкластерлерге</strong> бірігеді. Біздің Жергілікті Топ Ланиакея суперкластерінің бір бөлігі болып табылады.</p>
+        <p><strong>Ғаламның ірі масштабтағы құрылымы</strong> — галактикалар мен кластерлер "жіптер" мен "парақтар" түрінде орналасады, олардың арасында үлкен бос кеңістіктер — <strong>войдтар</strong> бар. Бұл құрылым "ғарыш торы" деп аталады.</p>
+      </div>
+      <div>
+        <div class="data-card reveal">
+          <div class="data-card-number">Ланиакея</div>
+          <div class="data-card-unit">Біздің суперкластер</div>
+          <div class="data-card-desc">Ланиакея суперкластері 500 миллион жарық жылын алып жатады. Оның ішінде 100 000-нан астам галактика бар. 2014 жылы ашылды.</div>
+        </div>
+        <br>
+        <div class="data-card reveal">
+          <div class="data-card-number">54</div>
+          <div class="data-card-unit">галактика — Жергілікті Топ</div>
+          <div class="data-card-desc">Біздің галактика тобы. Ең ірілер: Андромеда (M31), Құс жолы, Үшбұрышты (M33).</div>
+        </div>
+        <br>
+        <div class="data-card reveal">
+          <div class="data-card-number">4,5 млрд</div>
+          <div class="data-card-unit">жыл — Андромедамен соқтығысу</div>
+          <div class="data-card-desc">Андромеда галактикасы бізге қарай жылжуда. 4,5 миллиард жылдан кейін екі галактика бірігетін болады.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: ҚАРАҢҒЫ ЗАТТА -->
+  <section>
+    <div class="section-number">06 — Жұмбақ компоненттер</div>
+    <div class="section-heading reveal">
+      Қараңғы Зат<br>
+      <span class="outline">&amp; Қараңғы Энергия</span>
+    </div>
+
+    <div class="feature-block" data-label="ҒАРЫШ ЖҰМБАҒЫ">
+      <div class="content-grid-3">
+        <div>
+          <div class="data-card-unit" style="margin-bottom:1rem;">Кәдімгі зат</div>
+          <div class="data-card-number" style="font-size:3rem;">5%</div>
+          <p style="margin-top:1rem; font-size:16px; color:var(--mid-grey);">Жұлдыздар, планеталар, газ, шаң — біз байқай алатын барлық зат</p>
+        </div>
+        <div>
+          <div class="data-card-unit" style="margin-bottom:1rem;">Қараңғы зат</div>
+          <div class="data-card-number" style="font-size:3rem;">27%</div>
+          <p style="margin-top:1rem; font-size:16px; color:var(--mid-grey);">Табиғаты белгісіз. Тек гравитациялық әсері арқылы анықталады. Жарық шығармайды.</p>
+        </div>
+        <div>
+          <div class="data-card-unit" style="margin-bottom:1rem;">Қараңғы энергия</div>
+          <div class="data-card-number" style="font-size:3rem;">68%</div>
+          <p style="margin-top:1rem; font-size:16px; color:var(--mid-grey);">Ғаламның кеңеюін тездетуші күш. Ең үлкен жұмбақ — табиғаты мүлде белгісіз.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:2rem;">Қараңғы зат галактикаларды бір жерде ұстап тұрады. Оны тікелей байқау мүмкін емес, бірақ оның гравитациялық әсерін — жарықтың ауытқуы арқылы — байқауға болады. Бұл <strong>гравитациялық линзалану</strong> деп аталады.</p>
+    <p>Қараңғы энергия ғаламның барлық бағытта кеңеюін тездетеді. Ол 1998 жылы Ia типті супернова жарықтығын зерттеу барысында ашылды. Бұл ашылым үшін <strong>Нобель сыйлығы</strong> берілді.</p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div>
+      <div class="footer-title">
+        §49<br>
+        Біздің Галактика
+      </div>
+    </div>
+    <div class="footer-meta">
+      <p>Жасаған</p>
+      <p style="color:var(--off-white); font-size:14px; letter-spacing:0.1em;">Азамат Ақсұлтан</p>
+      <p style="margin-top:1.5rem;">Пән</p>
+      <p style="color:var(--off-white); font-size:14px; letter-spacing:0.1em;">Физика — §49</p>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// METEOR / FALLING STARS ANIMATION
+const canvas = document.getElementById('meteorCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const meteors = [];
+const staticStars = [];
+
+// Static background stars (small, white)
+for (let i = 0; i < 180; i++) {
+  staticStars.push({
+    x: Math.random(),
+    y: Math.random(),
+    r: Math.random() * 0.8 + 0.2,
+    alpha: Math.random() * 0.5 + 0.1,
+    twinkle: Math.random() * 0.02 + 0.005,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+function spawnMeteor() {
+  const startX = Math.random() * canvas.width * 1.5;
+  const startY = Math.random() * canvas.height * 0.5 - canvas.height * 0.2;
+  const len = Math.random() * 200 + 80;
+  const speed = Math.random() * 8 + 4;
+  const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+
+  meteors.push({
+    x: startX,
+    y: startY,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    len,
+    alpha: 1,
+    life: 1,
+    decay: Math.random() * 0.012 + 0.006,
+    width: Math.random() * 1.5 + 0.5
+  });
+}
+
+let frame = 0;
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  frame++;
+
+  // Draw static stars
+  staticStars.forEach(s => {
+    const tw = Math.sin(frame * s.twinkle + s.phase) * 0.3 + 0.7;
+    ctx.beginPath();
+    ctx.arc(s.x * canvas.width, s.y * canvas.height, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha * tw})`;
+    ctx.fill();
+  });
+
+  // Spawn meteors
+  if (frame % 55 === 0) spawnMeteor();
+  if (frame % 120 === 0 && Math.random() > 0.5) spawnMeteor(); // occasional burst
+
+  // Draw meteors
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.x += m.vx;
+    m.y += m.vy;
+    m.life -= m.decay;
+    m.alpha = m.life;
+
+    if (m.life <= 0) { meteors.splice(i, 1); continue; }
+
+    const tailX = m.x - Math.cos(Math.atan2(m.vy, m.vx)) * m.len * m.life;
+    const tailY = m.y - Math.sin(Math.atan2(m.vy, m.vx)) * m.len * m.life;
+
+    const grad = ctx.createLinearGradient(tailX, tailY, m.x, m.y);
+    grad.addColorStop(0, `rgba(255,255,255,0)`);
+    grad.addColorStop(0.7, `rgba(220,220,220,${m.alpha * 0.6})`);
+    grad.addColorStop(1, `rgba(255,255,255,${m.alpha})`);
+
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(m.x, m.y);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = m.width;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Head glow
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.width * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${m.alpha * 0.9})`;
+    ctx.fill();
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+
+// SCROLL REVEAL
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
